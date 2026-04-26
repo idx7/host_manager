@@ -39,12 +39,17 @@ def rotate_passwords():
 def create_stats(stat_date=None):
     stat_date = stat_date or timezone.localdate()
     rows = (
-        Host.objects.values("city_id", "server_room_id")
+        Host.objects.values(
+            "city_id",
+            "city__name",
+            "server_room_id",
+            "server_room__name",
+        )
         .annotate(total=Count("id"))
         .order_by("city_id", "server_room_id")
     )
 
-    count = 0
+    results = []
     for row in rows:
         HostCountStat.objects.update_or_create(
             stat_date=stat_date,
@@ -52,9 +57,9 @@ def create_stats(stat_date=None):
             server_room_id=row["server_room_id"],
             defaults={"host_count": row["total"]},
         )
-        count += 1
+        results.append(f'{row["city__name"]} / {row["server_room__name"]} / {row["total"]} 台')
 
-    return count
+    return results
 
 
 def ping_ip(ip_address):
